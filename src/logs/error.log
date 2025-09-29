@@ -1,0 +1,2 @@
+{"level":"error","message":"Register failed: E11000 duplicate key error collection: test.customers index: email_1 dup key: { email: \"john@example.com\" }","timestamp":"2025-09-27T16:30:33.973Z"}
+{"level":"error","message":"Register failed: E11000 duplicate key error collection: test.customers index: email_1 dup key: { email: \"john@example.com\" }","timestamp":"2025-09-27T16:36:42.250Z"}

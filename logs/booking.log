@@ -1,0 +1,2 @@
+{"bookingId":"68d828530eae8571167d9a29","checkIn":"2025-10-01T00:00:00.000Z","checkOut":"2025-10-02T00:00:00.000Z","customer":"68d8280c0eae8571167d9a23","level":"info","message":"📌 Booking created/updated","room":"68d8234993104918174ffbbc","status":"reserved","timestamp":"2025-09-27T18:09:24.036Z"}
+{"level":"info","message":{"action":"CREATE_BOOKING","bookingId":"68d828530eae8571167d9a29","roomId":"68d8234993104918174ffbbc","status":"reserved","userId":"68d8280c0eae8571167d9a23"},"timestamp":"2025-09-27T18:09:24.097Z"}
