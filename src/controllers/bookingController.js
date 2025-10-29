@@ -4,21 +4,21 @@ const Booking = require('../models/Booking');
 const Room = require('../models/Room');
 const { bookingLogger } = require('../utils/logger'); // ✅ import logger
 
-// POST /api/bookings
+// ✅ POST /api/bookings - สร้างการจองใหม่
 exports.createBooking = async (req, res, next) => {
   const session = await mongoose.startSession();
   try {
-    const { roomId, roomNumber, checkIn, checkOut } = req.body;
+    const { roomId, roomNumber, checkIn, checkOut, guests, email } = req.body;
     const userId = req.user._id;
 
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
     if (checkInDate >= checkOutDate) {
-      return res.status(400).json({ message: 'Invalid dates' });
+      return res.status(400).json({ message: 'Invalid check-in/check-out dates' });
     }
 
     await session.withTransaction(async () => {
-      // หา room โดยใช้ roomId หรือ roomNumber
+      // 🔍 หา room จาก roomId หรือ roomNumber
       let room;
       if (roomId) {
         room = await Room.findById(roomId).session(session);
@@ -27,39 +27,46 @@ exports.createBooking = async (req, res, next) => {
       }
 
       if (!room) throw { status: 404, message: 'Room not found' };
-      if (room.status !== 'available') throw { status: 400, message: 'Room not available (status)' };
+      if (room.status !== 'available')
+        throw { status: 400, message: 'Room not available (status)' };
 
-      // check conflict booking
+      // ⚠️ ตรวจสอบการจองทับช่วงเวลา
       const conflict = await Booking.findOne({
         room: room._id,
         checkIn: { $lt: checkOutDate },
         checkOut: { $gt: checkInDate },
-        bookingStatus: { $in: ['reserved', 'confirmed'] }
+        bookingStatus: { $in: ['reserved', 'confirmed'] },
       }).session(session);
 
       if (conflict) throw { status: 409, message: 'Room already booked in that period' };
 
-      // ✅ create booking แบบใช้ save() เพื่อ trigger hook
+      // ✅ สร้าง booking
       const booking = new Booking({
         customer: userId,
         room: room._id,
+        roomNumber: room.roomNumber, // บันทึกหมายเลขห้อง
         checkIn: checkInDate,
         checkOut: checkOutDate,
-        bookingStatus: 'reserved'
+        guests,
+        email,
+        bookingStatus: 'reserved',
       });
       await booking.save({ session });
 
-      // update room status → reserved
+      // ✅ อัปเดตสถานะห้องเป็น reserved
       room.status = 'reserved';
       await room.save({ session });
 
-      // log booking
+      // 🪵 log booking
       bookingLogger.info({
         action: 'CREATE_BOOKING',
         bookingId: booking._id.toString(),
         userId: userId.toString(),
         roomId: room._id.toString(),
-        status: booking.bookingStatus
+        roomNumber: room.roomNumber,
+        guests,
+        email,
+        status: booking.bookingStatus,
       });
 
       res.status(201).json({ booking });
@@ -72,18 +79,18 @@ exports.createBooking = async (req, res, next) => {
   }
 };
 
-// GET booking by ID
+// ✅ GET booking by ID
 exports.getBooking = async (req, res, next) => {
   try {
     const booking = await Booking.findById(req.params.id).populate('customer room');
-    if (!booking) return res.status(404).json({ message: 'Not found' });
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
     res.json(booking);
   } catch (err) {
     next(err);
   }
 };
 
-// GET all bookings ของ user
+// ✅ GET all bookings ของ user
 exports.getMyBookings = async (req, res, next) => {
   try {
     const bookings = await Booking.find({ customer: req.user._id })
@@ -95,12 +102,12 @@ exports.getMyBookings = async (req, res, next) => {
   }
 };
 
-// CANCEL booking
+// ✅ CANCEL booking
 exports.cancelBooking = async (req, res, next) => {
   try {
     const booking = await Booking.findOne({
       _id: req.params.id,
-      customer: req.user._id
+      customer: req.user._id,
     }).populate('room');
 
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
@@ -112,19 +119,21 @@ exports.cancelBooking = async (req, res, next) => {
     booking.bookingStatus = 'cancelled';
     await booking.save();
 
-    // คืนห้องให้ available
+    // ✅ คืนห้องให้ available
     if (booking.room) {
       booking.room.status = 'available';
       await booking.room.save();
     }
 
-    // log cancel
+    // 🪵 log cancel
     bookingLogger.info({
       action: 'CANCEL_BOOKING',
       bookingId: booking._id.toString(),
       userId: req.user._id.toString(),
       roomId: booking.room._id.toString(),
-      status: booking.bookingStatus
+      roomNumber: booking.room.roomNumber,
+      email: booking.email,
+      status: booking.bookingStatus,
     });
 
     res.json({ message: 'Booking cancelled', booking });
@@ -133,7 +142,7 @@ exports.cancelBooking = async (req, res, next) => {
   }
 };
 
-// CONFIRM booking (admin ใช้)
+// ✅ CONFIRM booking (admin ใช้)
 exports.confirmBooking = async (req, res, next) => {
   try {
     const booking = await Booking.findById(req.params.id).populate('room');
@@ -146,19 +155,21 @@ exports.confirmBooking = async (req, res, next) => {
     booking.bookingStatus = 'confirmed';
     await booking.save();
 
-    // อัปเดตห้องเป็น maintenance
+    // ✅ อัปเดตห้องเป็น maintenance
     if (booking.room) {
       booking.room.status = 'maintenance';
       await booking.room.save();
     }
 
-    // log confirm
+    // 🪵 log confirm
     bookingLogger.info({
       action: 'CONFIRM_BOOKING',
       bookingId: booking._id.toString(),
       userId: req.user._id.toString(),
       roomId: booking.room._id.toString(),
-      status: booking.bookingStatus
+      roomNumber: booking.room.roomNumber,
+      email: booking.email,
+      status: booking.bookingStatus,
     });
 
     res.json({ message: 'Booking confirmed', booking });
