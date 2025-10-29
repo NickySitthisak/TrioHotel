@@ -5,13 +5,13 @@ const roomSchema = new mongoose.Schema({
   roomNumber: { type: String, required: true, unique: true },
   roomType: {
     type: String,
-    enum: ['Standard', 'Deluxe', 'Suite', 'Family', 'Honeymoon'], // ✅ จำกัดแค่ 3 ประเภท
+    enum: ['Standard', 'Deluxe', 'Suite', 'Family', 'Honeymoon'],
     required: true
   },
   price: { type: Number, required: true },
   status: {
     type: String,
-    enum: ['available', 'reserved', 'occupied', 'maintenance', 'closed'], // ✅ รองรับจอง/เข้าพัก
+    enum: ['available', 'reserved', 'occupied', 'maintenance', 'closed'],
     default: 'available'
   }
 }, { timestamps: true });
