@@ -11,6 +11,9 @@ const winston = require('winston');
 const fs = require('fs');
 const path = require('path');
 
+const auth = require('./middlewares/auth');
+const adminOnly = require('./middlewares/adminOnly');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -20,9 +23,9 @@ const logDir = path.join(process.cwd(), 'logs');
 if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir);
 }
-console.log("Log files dir:", logDir); // debug path
+console.log("Log files dir:", logDir);
 
-// 🟢 Morgan log request แบบ dev (เช่น POST /api/login 200 123ms)
+// 🟢 Morgan log request แบบ dev
 app.use(morgan('dev'));
 
 // 🟢 Winston logger เก็บลงไฟล์ + console
@@ -33,32 +36,30 @@ const logger = winston.createLogger({
     winston.format.json()
   ),
   transports: [
-    new winston.transports.Console(), // log ออก console ด้วย
+    new winston.transports.Console(),
     new winston.transports.File({ filename: path.join(logDir, 'error.log'), level: 'error' }),
     new winston.transports.File({ filename: path.join(logDir, 'combined.log') })
   ]
 });
 
-// connect DB
+// ✅ connect DB
 connectDB();
 
-// 🟢 force load models ที่มี logger (Booking.js)
+// ✅ force load models ที่มี logger
 require('./models/Booking');
 
-// routes
+// ✅ routes หลัก
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/rooms', require('./routes/rooms'));
 app.use('/api/bookings', require('./routes/bookings'));
 
-// POST /api/register
+// ✅ REGISTER
 app.post('/api/register', async (req, res) => {
   try {
     const customer = new Customer(req.body);
     await customer.save();
 
-    // log register สำเร็จ
     logger.info(`User registered: ${customer.email} (${customer._id})`);
-
     res.status(201).json(customer);
   } catch (err) {
     logger.error(`Register failed: ${err.message}`);
@@ -66,7 +67,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// POST /api/login
+// ✅ LOGIN
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -83,14 +84,13 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    // สร้าง token
+    // ✅ สร้าง token พร้อม role
     const token = jwt.sign(
-      { id: customer._id, email: customer.email },
+      { id: customer._id, email: customer.email, role: customer.role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    // log login สำเร็จ
     logger.info(`User logged in: ${customer.email} (${customer._id})`);
 
     res.json({
@@ -100,7 +100,8 @@ app.post('/api/login', async (req, res) => {
         id: customer._id,
         name: customer.name,
         email: customer.email,
-        username: customer.username
+        username: customer.username,
+        role: customer.role
       }
     });
   } catch (err) {
@@ -109,20 +110,24 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// root
+// ✅ Route ทดสอบ Admin เท่านั้น
+app.get('/api/admin/dashboard', auth, adminOnly, (req, res) => {
+  res.json({ message: `Welcome admin!`, user: req.user });
+});
+
+// ✅ Root route
 app.get('/', (req, res) => {
   res.send('TrioHotel Backend is running');
 });
 
-// global error handler (log ด้วย)
+// ✅ Global error handler
 app.use((err, req, res, next) => {
   logger.error(`${err.message} - ${req.method} ${req.originalUrl}`);
   errorHandler(err, req, res, next);
 });
 
-// START SERVER **หลังทุก route**
+// ✅ START SERVER
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  //logger.info("✅ Winston started and writing to combined.log");
 });

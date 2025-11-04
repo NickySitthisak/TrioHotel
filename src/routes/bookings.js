@@ -1,12 +1,21 @@
+// src/routes/bookingRoutes.js
 const express = require('express');
 const router = express.Router();
 const bookingCtrl = require('../controllers/bookingController');
 const auth = require('../middlewares/auth');
 
-router.post('/', auth, bookingCtrl.createBooking);        // จองห้อง
-router.get('/:id', auth, bookingCtrl.getBooking);         // ดู booking เดี่ยว
-router.get('/', auth, bookingCtrl.getMyBookings);         // ดู booking ของ user
-router.put('/:id/cancel', auth, bookingCtrl.cancelBooking); // ยกเลิก booking
-router.put('/:id/confirm', auth, bookingCtrl.confirmBooking); // ยืนยัน booking (ถ้ามี role admin)
+// ✅ PUBLIC ROUTE (ไม่ต้องใช้ token)
+router.get('/', bookingCtrl.getAllBookingsPublic);
+
+// ✅ USER ROUTES (ต้องมี token)
+router.post('/', auth, bookingCtrl.createBooking);
+router.get('/:id', auth, bookingCtrl.getBooking);
+router.get('/me/mybookings', auth, bookingCtrl.getMyBookings);
+router.put('/:id/cancel', auth, bookingCtrl.cancelBooking);
+router.put('/:id/confirm', auth, bookingCtrl.confirmBooking);
+
+// ✅ ADMIN ROUTES
+router.put('/:id/admin-cancel', auth, bookingCtrl.adminCancelBooking);
+router.put('/:id/admin-confirm', auth, bookingCtrl.adminConfirmBooking);
 
 module.exports = router;

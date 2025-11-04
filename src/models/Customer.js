@@ -7,7 +7,12 @@ const customerSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   address: String,
   username: { type: String, required: true },
-  password: { type: String, required: true } // hashed
+  password: { type: String, required: true }, // hashed
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
+  }
 }, { timestamps: true });
 
 // Hash password ก่อน save
