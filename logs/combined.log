@@ -6,3 +6,4 @@
 {"level":"info","message":"User logged in: Nicky@email.com (68d8280c0eae8571167d9a23)","timestamp":"2025-09-29T14:23:30.179Z"}
 {"level":"error","message":"Cannot read properties of undefined (reading '_id') - GET /api/bookings","timestamp":"2025-11-04T15:57:38.084Z"}
 {"level":"info","message":"User registered: safebro@email.com (690a256f2e8b6109df84960b)","timestamp":"2025-11-04T16:10:23.674Z"}
+{"level":"info","message":"User logged in: safebro@email.com (690a256f2e8b6109df84960b)","timestamp":"2025-11-05T06:16:09.688Z"}

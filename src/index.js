@@ -1,3 +1,4 @@
+// index.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -18,11 +19,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ================== Logger Setup ==================
 // 🟢 Ensure logs folder exists (root project)
 const logDir = path.join(process.cwd(), 'logs');
-if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir);
-}
+if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
 console.log("Log files dir:", logDir);
 
 // 🟢 Morgan log request แบบ dev
@@ -42,18 +42,20 @@ const logger = winston.createLogger({
   ]
 });
 
-// ✅ connect DB
+// ================== Connect DB ==================
 connectDB();
 
-// ✅ force load models ที่มี logger
+// ✅ Force load models ที่มี logger
 require('./models/Booking');
+require('./models/Room');
 
-// ✅ routes หลัก
+// ================== Routes ==================
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/rooms', require('./routes/rooms'));
-app.use('/api/bookings', require('./routes/bookings'));
+app.use('/api/bookings', require('./routes/bookings')); // ใช้ bookingRoutes.js ใหม่ที่รวม email search
 
-// ✅ REGISTER
+// ================== Auth/Register/Login ==================
+// REGISTER
 app.post('/api/register', async (req, res) => {
   try {
     const customer = new Customer(req.body);
@@ -67,7 +69,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// ✅ LOGIN
+// LOGIN
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -110,23 +112,23 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ✅ Route ทดสอบ Admin เท่านั้น
+// ================== Admin Test Route ==================
 app.get('/api/admin/dashboard', auth, adminOnly, (req, res) => {
   res.json({ message: `Welcome admin!`, user: req.user });
 });
 
-// ✅ Root route
+// ================== Root Route ==================
 app.get('/', (req, res) => {
   res.send('TrioHotel Backend is running');
 });
 
-// ✅ Global error handler
+// ================== Global Error Handler ==================
 app.use((err, req, res, next) => {
   logger.error(`${err.message} - ${req.method} ${req.originalUrl}`);
   errorHandler(err, req, res, next);
 });
 
-// ✅ START SERVER
+// ================== Start Server ==================
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

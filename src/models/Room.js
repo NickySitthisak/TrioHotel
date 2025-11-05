@@ -12,7 +12,7 @@ const roomSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['available', 'reserved', 'occupied', 'maintenance', 'closed'],
-    default: 'available'
+    default: 'available' // ✅ default เป็น available
   }
 }, { timestamps: true });
 
